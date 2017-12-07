@@ -2,4 +2,4 @@
 /.idea/
 /node_modules/
 *.iml
-/test/db/
+/test/db/udgerdb_v3.dat
