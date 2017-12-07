@@ -25,5 +25,8 @@
     "fs-extra": "4.0.3",
     "node-gyp": "3.6.2",
     "request": "2.83.0"
+  },
+  "devDependencies": {
+    "tap": "11.0.0"
   }
 }
