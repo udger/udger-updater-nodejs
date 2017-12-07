@@ -1,0 +1,29 @@
+{
+  "name": "udger-updater-nodejs",
+  "version": "0.0.0",
+  "description": "Enhanced nodejs data updater for udger local and cloud parser https://udger.com/products",
+  "main": "index.js",
+  "scripts": {
+    "test": "node node_modules/tap/bin/run.js test/*.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/udger/udger-updater-nodejs.git"
+  },
+  "keywords": [
+    "udger",
+    "updater"
+  ],
+  "author": "eviltik",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/udger/udger-updater-nodejs/issues"
+  },
+  "homepage": "https://github.com/udger/udger-updater-nodejs#readme",
+  "dependencies": {
+    "better-sqlite3": "4.0.3",
+    "fs-extra": "4.0.3",
+    "node-gyp": "3.6.2",
+    "request": "2.83.0"
+  }
+}
