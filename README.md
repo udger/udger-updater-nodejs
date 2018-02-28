@@ -4,7 +4,7 @@
 
 # Udger Updater for NodeJS (data ver. 3)
 Like others [udger-updater-win](https://github.com/udger/udger-updater-win) and [udger-updater-linux](https://github.com/udger/udger-updater-linux),
-this module handler sqlite database update. Differences with other updaters:
+this module handle udger sqlite database update. Differences with other updaters:
 
 * 100% nodejs
 * Dump differences between database versions (all tables)
@@ -38,7 +38,7 @@ udgerUpdater.on('needUpdate', (needUpdate, versions) => {
     if (needUpdate) {
         console.log('udger database should be updated');
         console.log(JSON.stringify(versions, null, 4));
-        return udgerUpdater.download();
+        return udgerUpdater.downloadNow();
     }
 
     console.log('udger database already up to date');
@@ -77,6 +77,10 @@ udgerUpdater.on('diffDone', () => {
 
 udgerUpdater.checkForUpdate();
 ```
+## HTML Report sample
+
+![Alt text](/example/report.png?raw=true)
+
 
 ## Running tests
     npm test
