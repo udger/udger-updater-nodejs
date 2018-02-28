@@ -3,3 +3,4 @@
 /node_modules/
 *.iml
 /test/db/udgerdb_v3.dat
+/example/*.dat
