@@ -78,7 +78,6 @@ udgerUpdater.on('diffDone', () => {
 udgerUpdater.checkForUpdate();
 ```
 
-
 ## Running tests
     npm test
 
