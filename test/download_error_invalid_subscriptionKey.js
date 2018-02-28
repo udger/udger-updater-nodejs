@@ -10,7 +10,7 @@ tap.test(
     'invalid key should return 404',
     (t) => {
         const udgerUpdater = require('../')(options);
-        udgerUpdater.updateNow((err) => {
+        udgerUpdater.downloadNow((err) => {
             t.equal(err.message.match(/404/)[0], '404');
             t.end();
         });

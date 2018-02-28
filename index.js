@@ -101,7 +101,7 @@ class UdgerUpdater extends EventEmitter {
         })
     }
 
-    download(callback) {
+    downloadNow(callback) {
 
         if (fs.pathExistsSync(this.options.nextDatabase)) {
             throw new Error(this.options.nextDatabase + ' already exist on the disk');
@@ -114,7 +114,7 @@ class UdgerUpdater extends EventEmitter {
         let currentPercent;
         let writeStream;
 
-        debug("updateNow", "downloading", this.url);
+        debug("downloadNow", "downloading", this.url);
 
         let r = request(this.url);
 
@@ -124,7 +124,7 @@ class UdgerUpdater extends EventEmitter {
 
             if (resp.statusCode === 200) {
 
-                debug("updateNow","response OK, piping to", this.options.nextDatabase);
+                debug("downloadNow","response OK, piping to", this.options.nextDatabase);
                 contentLength = parseInt(resp.headers['content-length']);
                 writeStream = fs.createWriteStream(this.options.nextDatabase);
                 r.pipe(writeStream);
@@ -143,7 +143,7 @@ class UdgerUpdater extends EventEmitter {
             currentPercent = Math.round((received*100)/contentLength)+'%';
             if (previousPercent != currentPercent) {
                 previousPercent = currentPercent;
-                debug('updateNow', currentPercent);
+                debug('downloadNow', currentPercent);
                 this.emit('downloading', currentPercent);
             }
         });
