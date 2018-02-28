@@ -325,8 +325,6 @@ class UdgerUpdater extends EventEmitter {
         this.dbNext.close();
         this.dbCurrent.close();
 
-        this.emit('diffDone');
-
         //console.log('current version:',this.versionCurrent);
         //console.log('next version:',this.versionNext);
         //console.log(JSON.stringify(itemsStats,null,4));
@@ -387,6 +385,8 @@ class UdgerUpdater extends EventEmitter {
 
             report.htmlReport = html;
         }
+
+        this.emit('diffDone', report);
 
         callback && callback(null, report);
 

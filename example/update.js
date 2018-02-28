@@ -4,7 +4,7 @@ const fs = require('fs-extra');
 const tmp = require('tmp');
 
 let options = {
-    subscriptionKey:'YOUR_SUBSCRIPTION_KEY_HERE',
+    subscriptionKey:'UDGER_KEY',
     currentDatabase:'./udgerdb_v3.dat',
     nextDatabase:tmp.tmpNameSync()
 };
@@ -17,7 +17,7 @@ udgerUpdater.on('needUpdate', (needUpdate, versions) => {
     if (needUpdate) {
         console.log('udger database should be updated');
         console.log(JSON.stringify(versions, null, 4));
-        return udgerUpdater.download();
+        return udgerUpdater.downloadNow();
     }
 
     console.log('udger database already up to date');
@@ -43,7 +43,7 @@ udgerUpdater.on('diffing', (sqliteTableName) => {
     console.log('diffing %s', sqliteTableName);
 });
 
-udgerUpdater.on('diffDone', () => {
+udgerUpdater.on('diffDone', (report) => {
     console.log('diff done');
 
     // warning, at this point, every process using current database
@@ -51,7 +51,9 @@ udgerUpdater.on('diffDone', () => {
     fs.copy(options.nextDatabase, options.currentDatabase, err => {
         if (err) return console.error(err);
         console.log('%s has been updated', options.currentDatabase);
-    })
+    });
+
+    fs.outputFileSync('./report.html', report.htmlReport);
 });
 
 udgerUpdater.checkForUpdate();
