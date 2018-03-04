@@ -1,6 +1,6 @@
 {
   "name": "udger-updater-nodejs",
-  "version": "1.0.3",
+  "version": "1.2.0",
   "description": "Enhanced nodejs data updater for udger local and cloud parser https://udger.com/products",
   "main": "index.js",
   "scripts": {
@@ -24,8 +24,8 @@
     "better-sqlite3": "4.1.0",
     "debug": "3.1.0",
     "fs-extra": "5.0.0",
-    "merge-deep": "^3.0.1",
-    "moment": "^2.21.0",
+    "merge-deep": "3.0.1",
+    "moment": "2.21.0",
     "node-gyp": "3.6.2",
     "nodemailer": "4.6.0",
     "request": "2.83.0",
