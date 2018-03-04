@@ -1,6 +1,6 @@
 {
   "name": "udger-updater-nodejs",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Enhanced nodejs data updater for udger local and cloud parser https://udger.com/products",
   "main": "index.js",
   "scripts": {
