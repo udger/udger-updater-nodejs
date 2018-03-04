@@ -85,6 +85,11 @@ class UdgerUpdater extends EventEmitter {
         }
     }
 
+    emitEvent(evName, data, details) {
+        if (!this.listeners(evName).length) return;
+        this.emit(evName, data, details);
+    }
+
     checkForUpdate(callback) {
 
         debug('checkForUpdate', 'request', this.urlVersion);
@@ -101,7 +106,7 @@ class UdgerUpdater extends EventEmitter {
             debug('checkForUpdate', 'remote version:', this.versionRemote);
             debug('checkForUpdate', 'current version:', this.versionCurrent.version);
 
-            this.emit('needUpdate', this.versionRemote != this.versionCurrent.version, {
+            this.emitEvent('needUpdate', this.versionRemote != this.versionCurrent.version, {
                 version:{
                     current:this.versionCurrent.version,
                     available:this.versionRemote
@@ -143,24 +148,36 @@ class UdgerUpdater extends EventEmitter {
                 this.sha1 = body;
 
                 this.downloadDbNow(callback);
+                return;
+            }
 
-            } else {
+            if (resp.statusCode === 404) {
 
-                if (this.downloadRetry<this.downloadRetryMax-1) {
-                    this.downloadRetry+=1;
-                    debug('downloadSha1Now','unexpected status code ('+resp.statusCode+'), retry #'+this.downloadRetry);
-                    return this.downloadSha1Now(callback);
-                }
+                // invalid udger key
 
-                debug('downloadSha1Now','unexpected status code ('+resp.statusCode+'), max retry reached #'+this.downloadRetry);
+                debug('downloadSha1Now','unexpected status code ('+resp.statusCode+')');
                 this.downloadRetry = 0;
 
-                this.emit('error', 'download of '+this.urlSha1+' failed after '+this.downloadRetryMax+' tries (bad status code remote response)');
+                this.emitEvent('error', 'download of '+this.urlSha1+' failed (bad api key ?)');
 
-                callback && callback(new Error('unexpected status code ('+resp.statusCode+')'));
+                callback && callback(new Error('unexpected status code ('+resp.statusCode+'), bad api key ?'));
                 return;
 
             }
+
+            if (this.downloadRetry<this.downloadRetryMax-1) {
+                this.downloadRetry+=1;
+                debug('downloadSha1Now','unexpected status code ('+resp.statusCode+'), retry #'+this.downloadRetry);
+                return this.downloadSha1Now(callback);
+            }
+
+            debug('downloadSha1Now','unexpected status code ('+resp.statusCode+'), max retry reached #'+this.downloadRetry);
+            this.downloadRetry = 0;
+
+            this.emitEvent('error', 'download of '+this.urlSha1+' failed after '+this.downloadRetryMax+' tries (bad status code remote response)');
+
+            callback && callback(new Error('unexpected status code ('+resp.statusCode+')'));
+            return;
 
         });
     }
@@ -170,8 +187,9 @@ class UdgerUpdater extends EventEmitter {
         let sha1 = sha1FileSum(this.options.nextDatabase);
         debug("checksumControl","sha1 checksum wanted", this.sha1);
         debug("checksumControl","sha1 checksum", sha1);
+
         if (sha1 === this.sha1) {
-            this.emit('downloaded', true);
+            this.emitEvent('downloaded', true);
             return callback && callback(null, true);
         }
 
@@ -184,7 +202,7 @@ class UdgerUpdater extends EventEmitter {
         debug('checksumControl','checksum does not match, max retry reached #'+this.downloadRetry);
         this.downloadRetry = 0;
 
-        this.emit('error', 'download of '+this.urlDb+' failed after '+this.downloadRetryMax+' tries (bad checksum)');
+        this.emitEvent('error', 'download of '+this.urlDb+' failed after '+this.downloadRetryMax+' tries (bad checksum)');
 
         callback && callback(new Error('checksump does not match'));
     }
@@ -215,6 +233,17 @@ class UdgerUpdater extends EventEmitter {
                 r.pipe(writeStream);
                 r.resume();
 
+            } else if (resp.statusCode === 404) {
+
+                // invalid udger key
+
+                debug('downloadDbNow','unexpected status code ('+resp.statusCode+')');
+                this.downloadRetry = 0;
+
+                this.emitEvent('error', 'download of '+this.urlDb+' failed (bad api key ?)');
+
+                callback && callback(new Error('unexpected status code ('+resp.statusCode+'), bad api key ?'));
+
             } else {
 
                 if (this.downloadRetry<this.downloadRetryMax-1) {
@@ -226,7 +255,7 @@ class UdgerUpdater extends EventEmitter {
                 debug('downloadDbNow','unexpected status code ('+resp.statusCode+'), max retry reached #'+this.downloadRetry);
                 this.downloadRetry = 0;
 
-                this.emit('error', 'download of '+this.urlDb+' failed after '+this.downloadRetryMax+' tries (bad status code remote response)');
+                this.emitEvent('error', 'download of '+this.urlDb+' failed after '+this.downloadRetryMax+' tries (bad status code remote response)');
 
                 callback && callback(new Error('unexpected status code ('+resp.statusCode+')'));
                 return;
@@ -240,7 +269,7 @@ class UdgerUpdater extends EventEmitter {
             if (previousPercent != currentPercent) {
                 previousPercent = currentPercent;
                 debug('downloadDbNow', currentPercent);
-                this.emit('downloading', parseInt(currentPercent));
+                this.emitEvent('downloading', parseInt(currentPercent));
             }
         });
 
@@ -380,7 +409,7 @@ class UdgerUpdater extends EventEmitter {
 
         for (let tb in countDiff) {
 
-            this.emit('diffing', tb);
+            this.emitEvent('diffing', tb);
 
             idx = specialIndex[tb] || 'id';
 
@@ -482,7 +511,7 @@ class UdgerUpdater extends EventEmitter {
             report.htmlReport = html;
         }
 
-        this.emit('diffDone', report);
+        this.emitEvent('diffDone', report);
 
         callback && callback(null, report);
 
