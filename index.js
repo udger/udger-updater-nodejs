@@ -6,6 +6,8 @@ const merge = require('merge-deep');
 const request = require('request');
 const moment = require('moment');
 const EventEmitter = require('events');
+const sha1FileSum = require('sha1-file');
+const tmp = require('tmp');
 
 const REPORT_ITEM_DISPLAYED_MAX = 10;
 
@@ -20,7 +22,8 @@ class UdgerUpdater extends EventEmitter {
             subscriptionKey:null,
             currentDatabase:null,
             baseUrl:'http://data.udger.com/',
-            remoteFilename:'udgerdb_v3.dat'
+            remoteFilename:'udgerdb_v3.dat',
+            remoteFilenameSha1:'udgerdb_v3_dat.sha1'
         };
 
         if (!options) {
@@ -39,17 +42,29 @@ class UdgerUpdater extends EventEmitter {
         }
 
         if (!options.nextDatabase) {
-            throw new Error('nextDatabase option is mandatory');
-            return;
+            options.nextDatabase = tmp.tmpNameSync();
+        }
+
+        this.downloadRetryMax = 3;
+        if (typeof options.downloadRetryMax === 'number') {
+            this.downloadRetryMax = options.downloadRetryMax;
+        }
+
+        if (typeof options.downloadRetryMax === 'boolean' && !options.downloadRetryMax) {
+            this.downloadRetryMax = 0;
         }
 
         this.options = merge(defaultOptions, options);
 
         this.dbCurrent = new Database(options.currentDatabase, {readonly: true, fileMustExist: true});
 
-        this.url = this.options.baseUrl
+        this.urlDb = this.options.baseUrl
             + this.options.subscriptionKey + '/'
             + this.options.remoteFilename;
+
+        this.urlSha1 = this.options.baseUrl
+            + this.options.subscriptionKey + '/'
+            + this.options.remoteFilenameSha1;
 
         this.urlVersion = this.options.baseUrl
             + this.options.subscriptionKey + '/version';
@@ -57,6 +72,17 @@ class UdgerUpdater extends EventEmitter {
         this.versionCurrent = this.dbCurrent.prepare("SELECT * FROM udger_db_info").get();
         this.versionRemote = null;
 
+        this.sha1 = null;
+        this.downloadRetry = 0;
+
+
+    }
+
+    removeNextDatabaseIfAlreadyExist() {
+        if (fs.pathExistsSync(this.options.nextDatabase)) {
+            debug('removeTmpFileIfExist', 'removing existing file', this.options.nextDatabase);
+            fs.removeSync(this.options.nextDatabase);
+        }
     }
 
     checkForUpdate(callback) {
@@ -97,16 +123,75 @@ class UdgerUpdater extends EventEmitter {
                 callback && callback(null, goForUpdate);
                 return;
             }
-            this.download(callback);
+            this.downloadNow(callback);
         })
     }
 
     downloadNow(callback) {
+        this.downloadSha1Now(callback);
+    }
 
-        if (fs.pathExistsSync(this.options.nextDatabase)) {
-            throw new Error(this.options.nextDatabase + ' already exist on the disk');
-            return;
+    downloadSha1Now(callback) {
+
+        this.sha1 = null;
+
+        request(this.urlSha1, (err, resp, body) => {
+
+            if (resp.statusCode === 200) {
+
+                debug("downloadSha1Now","response OK");
+                this.sha1 = body;
+
+                this.downloadDbNow(callback);
+
+            } else {
+
+                if (this.downloadRetry<this.downloadRetryMax-1) {
+                    this.downloadRetry+=1;
+                    debug('downloadSha1Now','unexpected status code ('+resp.statusCode+'), retry #'+this.downloadRetry);
+                    return this.downloadSha1Now(callback);
+                }
+
+                debug('downloadSha1Now','unexpected status code ('+resp.statusCode+'), max retry reached #'+this.downloadRetry);
+                this.downloadRetry = 0;
+
+                this.emit('error', 'download of '+this.urlSha1+' failed after '+this.downloadRetryMax+' tries (bad status code remote response)');
+
+                callback && callback(new Error('unexpected status code ('+resp.statusCode+')'));
+                return;
+
+            }
+
+        });
+    }
+
+    checksumControl(callback) {
+        debug('checksumControl','computing sha1 for file');
+        let sha1 = sha1FileSum(this.options.nextDatabase);
+        debug("checksumControl","sha1 checksum wanted", this.sha1);
+        debug("checksumControl","sha1 checksum", sha1);
+        if (sha1 === this.sha1) {
+            this.emit('downloaded', true);
+            return callback && callback(null, true);
         }
+
+        if (this.downloadRetry<this.downloadRetryMax-1) {
+            this.downloadRetry+=1;
+            debug('checksumControl','checksum does not match, retrying db download');
+            return this.downloadDbNow(callback);
+        }
+
+        debug('checksumControl','checksum does not match, max retry reached #'+this.downloadRetry);
+        this.downloadRetry = 0;
+
+        this.emit('error', 'download of '+this.urlDb+' failed after '+this.downloadRetryMax+' tries (bad checksum)');
+
+        callback && callback(new Error('checksump does not match'));
+    }
+
+    downloadDbNow(callback) {
+
+        this.removeNextDatabaseIfAlreadyExist();
 
         let received = 0;
         let contentLength;
@@ -114,9 +199,9 @@ class UdgerUpdater extends EventEmitter {
         let currentPercent;
         let writeStream;
 
-        debug("downloadNow", "downloading", this.url);
+        debug("downloadDbNow", "downloading", this.urlDb);
 
-        let r = request(this.url);
+        let r = request(this.urlDb);
 
         r.pause();
 
@@ -124,13 +209,24 @@ class UdgerUpdater extends EventEmitter {
 
             if (resp.statusCode === 200) {
 
-                debug("downloadNow","response OK, piping to", this.options.nextDatabase);
+                debug("downloadDbNow","response OK, piping to", this.options.nextDatabase);
                 contentLength = parseInt(resp.headers['content-length']);
                 writeStream = fs.createWriteStream(this.options.nextDatabase);
                 r.pipe(writeStream);
                 r.resume();
 
             } else {
+
+                if (this.downloadRetry<this.downloadRetryMax-1) {
+                    this.downloadRetry+=1;
+                    debug('downloadDbNow','unexpected status code ('+resp.statusCode+'), retry #'+this.downloadRetry);
+                    return this.downloadDbNow(callback);
+                }
+
+                debug('downloadDbNow','unexpected status code ('+resp.statusCode+'), max retry reached #'+this.downloadRetry);
+                this.downloadRetry = 0;
+
+                this.emit('error', 'download of '+this.urlDb+' failed after '+this.downloadRetryMax+' tries (bad status code remote response)');
 
                 callback && callback(new Error('unexpected status code ('+resp.statusCode+')'));
                 return;
@@ -143,14 +239,14 @@ class UdgerUpdater extends EventEmitter {
             currentPercent = Math.round((received*100)/contentLength)+'%';
             if (previousPercent != currentPercent) {
                 previousPercent = currentPercent;
-                debug('downloadNow', currentPercent);
-                this.emit('downloading', currentPercent);
+                debug('downloadDbNow', currentPercent);
+                this.emit('downloading', parseInt(currentPercent));
             }
         });
 
         r.on('end', () => {
-            this.emit('downloaded', true);
-            callback && callback(null, true);
+            writeStream.end();
+            this.checksumControl(callback);
         });
 
     }

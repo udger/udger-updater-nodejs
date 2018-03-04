@@ -29,6 +29,7 @@
     "node-gyp": "3.6.2",
     "nodemailer": "4.6.0",
     "request": "2.83.0",
+    "sha1-file": "1.0.0",
     "tmp": "0.0.33"
   },
   "devDependencies": {

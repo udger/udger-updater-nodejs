@@ -1,17 +1,22 @@
 const tap = require('tap');
 const path = require('path');
 const fs = require('fs-extra');
-const tmp = require('tmp');
 
 let options = {
-    subscriptionKey:'UDGER_KEY',
+    subscriptionKey:process.env.UDGER_KEY||'MY_KEY',
     currentDatabase:'./udgerdb_v3.dat',
-    nextDatabase:tmp.tmpNameSync()
+
+    // you can force a temporary file.
+    // if not set, it will use os tmpdir with a random filename
+    // nextDatabase:'./tmpFile.dat'
 };
 
-console.log("tmp file: %s", options.nextDatabase);
-
 const udgerUpdater = require('../')(options);
+
+udgerUpdater.on('error', (err) => {
+    console.log('an error occured');
+    console.log(err);
+})
 
 udgerUpdater.on('needUpdate', (needUpdate, versions) => {
     if (needUpdate) {
@@ -26,7 +31,9 @@ udgerUpdater.on('needUpdate', (needUpdate, versions) => {
 });
 
 udgerUpdater.on('downloading', (percent) => {
-    console.log('downloading ... %s', percent);
+    if (percent % 33 === 0 || !percent || percent === 100) {
+        console.log('downloading udger database ... %s', percent+'%');
+    }
 });
 
 udgerUpdater.on('downloaded', () => {
@@ -48,10 +55,13 @@ udgerUpdater.on('diffDone', (report) => {
 
     // warning, at this point, every process using current database
     // must close connection. New database can not be copied if used.
+
+    /*
     fs.copy(options.nextDatabase, options.currentDatabase, err => {
         if (err) return console.error(err);
         console.log('%s has been updated', options.currentDatabase);
     });
+    */
 
     fs.outputFileSync('./report.html', report.htmlReport);
 });

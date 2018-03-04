@@ -22,17 +22,24 @@ this module handle udger sqlite database update. Differences with other updaters
 
 ```
 const fs = require('fs-extra');
-const tmp = require('tmp');
 
 let options = {
-    subscriptionKey:'YOUR_SUBSCRIPTION_KEY_HERE',
+    subscriptionKey:process.env.UDGER_KEY||'YOUR_SUBSCRIPTION_KEY_HERE',
     currentDatabase:'./udgerdb_v3.dat',
-    nextDatabase:tmp.tmpNameSync()
+
+    // you can force a temporary filename,
+    // if not set, it will use os tmpdir with a random filename
+    // nextDatabase:'./tmpFile.dat'
 };
 
 console.log("tmp file: %s", options.nextDatabase);
 
 const udgerUpdater = require('../')(options);
+
+udgerUpdater.on('error', (err) => {
+    console.log('an error occured');
+    console.log(err);
+})
 
 udgerUpdater.on('needUpdate', (needUpdate, versions) => {
     if (needUpdate) {
@@ -47,7 +54,9 @@ udgerUpdater.on('needUpdate', (needUpdate, versions) => {
 });
 
 udgerUpdater.on('downloading', (percent) => {
-    console.log('downloading ... %s', percent);
+    if (percent % 33 === 0 || !percent || percent === 100) {
+        console.log('downloading udger database ... %s', percent+'%');
+    }
 });
 
 udgerUpdater.on('downloaded', () => {
@@ -77,6 +86,7 @@ udgerUpdater.on('diffDone', () => {
 
 udgerUpdater.checkForUpdate();
 ```
+
 ## HTML Report sample
 
 ![Alt text](/example/report.png?raw=true)
