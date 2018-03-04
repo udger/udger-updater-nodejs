@@ -92,6 +92,22 @@ udgerUpdater.checkForUpdate();
 ![Alt text](/example/report.png?raw=true)
 
 
+## Troubleshoot
+    You can use env var "DEBUG" to see debug messages.
+
+win32
+```
+cd example
+set DEBUG=*
+node update.js
+```
+
+linux
+```
+cd example
+DEBUG=* node update.js
+```
+
 ## Running tests
     npm test
 
