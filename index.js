@@ -6,7 +6,7 @@ const merge = require('merge-deep');
 const request = require('request');
 const moment = require('moment');
 const EventEmitter = require('events');
-const sha1FileSum = require('sha1-file');
+const sha1FileSum = require('./utils/sha1-file');
 const tmp = require('tmp');
 
 const REPORT_ITEM_DISPLAYED_MAX = 10;
