@@ -1,6 +1,6 @@
 {
   "name": "udger-updater-nodejs",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "Enhanced nodejs data updater for udger local and cloud parser https://udger.com/products",
   "main": "index.js",
   "scripts": {
@@ -21,17 +21,18 @@
   },
   "homepage": "https://github.com/udger/udger-updater-nodejs#readme",
   "dependencies": {
-    "better-sqlite3": "5.4.0",
+    "better-sqlite3": "5.4.1",
     "debug": "4.1.1",
-    "fs-extra": "8.0.1",
+    "fs-extra": "8.1.0",
     "merge-deep": "3.0.2",
     "moment": "2.24.0",
-    "node-gyp": "4.0.0",
-    "nodemailer": "6.2.1",
+    "node-gyp": "5.0.3",
+    "nodemailer": "6.3.0",
     "request": "2.88.0",
     "tmp": "0.1.0"
   },
   "devDependencies": {
-    "tap": "14.2.0"
+    "tap": "14.4.2",
+    "treport": "0.4.0"
   }
 }
